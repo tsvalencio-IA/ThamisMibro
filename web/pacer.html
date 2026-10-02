@@ -82,6 +82,7 @@
       </div>
 
       <button id="testMibroBtn" class="accent">TESTAR ALERTA NO MIBRO</button>
+      <button id="testSuiteBtn" class="test-suite">TESTE COMPLETO • TODAS AS FUNÇÕES</button>
       <div id="mibroMessage" class="message"></div>
     </section>
 
@@ -125,11 +126,19 @@
         <div><span>Bloco</span><strong id="blockIndex">—</strong></div>
       </div>
 
-      <div class="controls">
+      <div class="controls" id="liveControls">
         <button id="pauseBtn">PAUSAR</button>
         <button id="nextBtn">PRÓXIMO</button>
         <button id="stopBtn" class="danger">ENCERRAR</button>
       </div>
+
+      <div id="finalSummary" class="final-summary hidden">
+        <div><span>Resultado</span><strong id="finalStatus">—</strong></div>
+        <div><span>Tempo ativo</span><strong id="finalTime">—</strong></div>
+        <div><span>Distância</span><strong id="finalDistance">—</strong></div>
+        <div><span>Pace médio</span><strong id="finalPace">—</strong></div>
+      </div>
+      <button id="newWorkoutBtn" class="primary hidden">NOVO TREINO</button>
     </section>
 
     <section class="card note">
