@@ -116,7 +116,8 @@ public class MibroPacerService extends Service implements LocationListener {
         } else if (ACTION_STOP.equals(action)) {
             finishWorkout(false);
         } else if (ACTION_TEST_ALERT.equals(action)) {
-            sendAlert("atletIA Mibro • TESTE", "Se este aviso apareceu no GS Pro, a ponte Mibro está funcionando.", true);
+            sendAlert("atletIA Mibro", "TESTE 1/2 • alerta de mensagem para o GS Pro", true);
+            handler.postDelayed(() -> sendAlert("atletIA Mibro", "TESTE 2/2 • ACELERE • alvo 7:15–7:45/km", true), 2200L);
             speak("Teste do Mibro enviado.");
         }
         return START_STICKY;
@@ -194,12 +195,24 @@ public class MibroPacerService extends Service implements LocationListener {
                 ? new Notification.Builder(this, CHANNEL_ALERT)
                 : new Notification.Builder(this);
 
+        Intent open = new Intent(this, MainActivity.class);
+        PendingIntent openPi = PendingIntent.getActivity(
+                this, (int)(alertCounter % 1000) + 100, open,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        Notification.MessagingStyle style = new Notification.MessagingStyle("atletIA")
+                .setConversationTitle("atletIA Mibro • Thamis")
+                .addMessage(text, System.currentTimeMillis(), "atletIA");
+
         b.setSmallIcon(R.drawable.ic_stat_atletia)
                 .setContentTitle(title)
                 .setContentText(text)
-                .setStyle(new Notification.BigTextStyle().bigText(text))
+                .setStyle(style)
+                .setContentIntent(openPi)
                 .setAutoCancel(true)
-                .setCategory(Notification.CATEGORY_WORKOUT)
+                .setShowWhen(true)
+                .setWhen(System.currentTimeMillis())
+                .setCategory(Notification.CATEGORY_MESSAGE)
                 .setVisibility(Notification.VISIBILITY_PUBLIC);
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
