@@ -90,6 +90,7 @@ public class MainActivity extends Activity {
                 webView.evaluateJavascript(
                         "window.AtletIAUpdateStatus && window.AtletIAUpdateStatus(" +
                                 JSONObject.quote(AutoUpdateManager.getStatus(MainActivity.this)) + ");", null);
+                sendToService(MibroPacerService.ACTION_QUERY, null);
             }, 350L);
         }
 
@@ -316,6 +317,17 @@ public class MainActivity extends Activity {
                 if (!hasNotificationPermission()) requestRuntimePermissions(false);
                 sendToService(MibroPacerService.ACTION_TEST_ALERT, null);
             });
+        }
+
+        @JavascriptInterface public void testSuite() {
+            runOnUiThread(() -> {
+                if (!hasNotificationPermission()) requestRuntimePermissions(false);
+                sendToService(MibroPacerService.ACTION_TEST_SUITE, null);
+            });
+        }
+
+        @JavascriptInterface public void queryState() {
+            runOnUiThread(() -> sendToService(MibroPacerService.ACTION_QUERY, null));
         }
 
         @JavascriptInterface public String mode() { return "mibro-gs-pro"; }
