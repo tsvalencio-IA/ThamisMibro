@@ -159,7 +159,7 @@ public class MibroPacerService extends Service implements LocationListener {
                 ? new Notification.Builder(this, CHANNEL_SERVICE)
                 : new Notification.Builder(this);
 
-        b.setSmallIcon(com.thiaguinhosolucoes.thamismibro.R.drawable.ic_stat_atletia)
+        b.setSmallIcon(R.drawable.ic_stat_atletia)
                 .setContentTitle("atletIA Mibro • Thamis")
                 .setContentText(text)
                 .setContentIntent(openPi)
@@ -194,7 +194,7 @@ public class MibroPacerService extends Service implements LocationListener {
                 ? new Notification.Builder(this, CHANNEL_ALERT)
                 : new Notification.Builder(this);
 
-        b.setSmallIcon(com.thiaguinhosolucoes.thamismibro.R.drawable.ic_stat_atletia)
+        b.setSmallIcon(R.drawable.ic_stat_atletia)
                 .setContentTitle(title)
                 .setContentText(text)
                 .setStyle(new Notification.BigTextStyle().bigText(text))
