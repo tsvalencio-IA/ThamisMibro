@@ -30,6 +30,13 @@ public class MainActivity extends Activity {
     private String pendingConfig = "";
     private boolean pendingStart = false;
 
+    private final AutoUpdateManager.Listener updateListener = status -> {
+        if (webView == null) return;
+        String quoted = JSONObject.quote(status == null ? "" : status);
+        webView.post(() -> webView.evaluateJavascript(
+                "window.AtletIAUpdateStatus && window.AtletIAUpdateStatus(" + quoted + ");", null));
+    };
+
     private final BroadcastReceiver telemetryReceiver = new BroadcastReceiver() {
         @Override public void onReceive(Context context, Intent intent) {
             String payload = intent.getStringExtra(MibroPacerService.EXTRA_TELEMETRY);
@@ -56,7 +63,7 @@ public class MainActivity extends Activity {
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        settings.setUserAgentString(settings.getUserAgentString() + " atletIA-Mibro-Thamis/1.1.0");
+        settings.setUserAgentString(settings.getUserAgentString() + " atletIA-Mibro-Thamis/" + appVersionName());
 
         webView.setWebViewClient(new WebViewClient());
         webView.setWebChromeClient(new WebChromeClient() {
@@ -68,14 +75,27 @@ public class MainActivity extends Activity {
         webView.addJavascriptInterface(new NativeBridge(), "AtletIANative");
         webView.loadUrl(LOCAL_URL);
         registerTelemetryReceiver();
+
+        // A cada abertura: verifica a release oficial e atualiza o próprio APK.
+        webView.postDelayed(() ->
+                AutoUpdateManager.checkAndUpdate(MainActivity.this, updateListener, false), 1200L);
     }
 
     @Override protected void onResume() {
         super.onResume();
         if (webView != null) {
-            webView.postDelayed(() -> webView.evaluateJavascript(
-                    "window.refreshMibroBridgeStatus && window.refreshMibroBridgeStatus();", null), 350L);
+            webView.postDelayed(() -> {
+                webView.evaluateJavascript(
+                        "window.refreshMibroBridgeStatus && window.refreshMibroBridgeStatus();", null);
+                webView.evaluateJavascript(
+                        "window.AtletIAUpdateStatus && window.AtletIAUpdateStatus(" +
+                                JSONObject.quote(AutoUpdateManager.getStatus(MainActivity.this)) + ");", null);
+            }, 350L);
         }
+
+        // Retoma automaticamente o update depois que o usuário concede
+        // "Instalar apps desconhecidos" para este aplicativo.
+        AutoUpdateManager.continuePendingUpdate(this, updateListener);
     }
 
     private void registerTelemetryReceiver() {
@@ -122,7 +142,7 @@ public class MainActivity extends Activity {
     private String bridgeStatusJson() {
         try {
             JSONObject o = new JSONObject();
-            o.put("appVersion", "1.1.0");
+            o.put("appVersion", appVersionName());
             o.put("mibroFitInstalled", isMibroFitInstalled());
             o.put("notificationPermission", hasNotificationPermission());
             o.put("locationPermission", hasFineLocationPermission());
@@ -131,7 +151,15 @@ public class MainActivity extends Activity {
             o.put("bridgeAccess", mibroNotificationListenerEnabled() || mibroAccessibilityEnabled());
             return o.toString();
         } catch (Exception e) {
-            return "{\"appVersion\":\"1.1.0\"}";
+            return "{\"appVersion\":\"" + appVersionName() + "\"}";
+        }
+    }
+
+    private String appVersionName() {
+        try {
+            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (Exception ignored) {
+            return "?";
         }
     }
 
@@ -291,7 +319,16 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface public String mode() { return "mibro-gs-pro"; }
-        @JavascriptInterface public String version() { return "1.1.0"; }
+        @JavascriptInterface public String version() { return appVersionName(); }
+
+        @JavascriptInterface public String updateStatus() {
+            return AutoUpdateManager.getStatus(MainActivity.this);
+        }
+
+        @JavascriptInterface public void checkForUpdates() {
+            runOnUiThread(() ->
+                    AutoUpdateManager.checkAndUpdate(MainActivity.this, updateListener, true));
+        }
 
         @JavascriptInterface public String notificationPermission() {
             return hasNotificationPermission() ? "granted" : "denied";
