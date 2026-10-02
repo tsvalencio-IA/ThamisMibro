@@ -232,12 +232,26 @@ public class MainActivity extends Activity {
             openThisAppNotificationSettings();
             return;
         }
-        if (!mibroNotificationListenerEnabled() && !mibroAccessibilityEnabled()) {
-            // A FAQ oficial da Mibro orienta conceder Acessibilidade ao Mibro Fit
-            // quando alertas não chegam.
-            openAccessibilitySettings();
+
+        boolean listener = mibroNotificationListenerEnabled();
+        boolean accessibility = mibroAccessibilityEnabled();
+
+        if (!listener && !accessibility) {
+            int attempts = getSharedPreferences("mibro_bridge", MODE_PRIVATE)
+                    .getInt("fix_attempts", 0);
+            getSharedPreferences("mibro_bridge", MODE_PRIVATE)
+                    .edit().putInt("fix_attempts", attempts + 1).apply();
+
+            // Primeiro caminho: orientação oficial da Mibro para falha de alertas.
+            // Se o aparelho não expuser o Mibro Fit em Acessibilidade, o próximo
+            // toque leva automaticamente ao Acesso a notificações do Android.
+            if (attempts % 2 == 0) openAccessibilitySettings();
+            else openNotificationListenerSettings();
             return;
         }
+
+        getSharedPreferences("mibro_bridge", MODE_PRIVATE)
+                .edit().putInt("fix_attempts", 0).apply();
         openMibroFit();
     }
 
