@@ -14,3 +14,12 @@
 .update-box{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0;padding:12px;border-radius:14px;background:#081728;border:1px solid #1d3450}
 .update-box div{min-width:0}.update-box span{display:block;color:var(--muted);font-size:10px;font-weight:900;letter-spacing:1.25px;margin-bottom:4px}.update-box strong{display:block;font-size:13px;line-height:1.35;color:#dce9f7}.update-box button{flex:0 0 auto;padding:10px 12px;font-size:11px}
 @media(max-width:420px){.update-box{align-items:stretch;flex-direction:column}.update-box button{width:100%}}
+
+.test-suite{width:100%;margin-top:8px;background:linear-gradient(135deg,#5a3fff,#8b5cff);color:#fff}
+.final-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:14px}
+.final-summary div{background:#071522;border:1px solid #24425f;border-radius:14px;padding:12px}
+.final-summary span{display:block;color:var(--muted);font-size:11px;margin-bottom:5px}
+.final-summary strong{font-size:16px}
+#newWorkoutBtn{width:100%;margin-top:12px}
+.live.finished{border-color:rgba(90,167,255,.45)}
+@media(max-width:420px){.final-summary{grid-template-columns:1fr 1fr}}
