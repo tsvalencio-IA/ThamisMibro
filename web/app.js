@@ -4,10 +4,10 @@ const $=id=>document.getElementById(id);
 const ui={
  boot:$("bootCard"),login:$("loginCard"),loginForm:$("loginForm"),email:$("email"),password:$("password"),loginMsg:$("loginMessage"),
  athlete:$("athleteCard"),athleteName:$("athleteName"),athleteEmail:$("athleteEmail"),logout:$("logoutBtn"),workoutCount:$("workoutCount"),nextDate:$("nextWorkoutDate"),
- mibro:$("mibroCard"),nativeStatus:$("nativeStatus"),notificationStatus:$("notificationStatus"),mibroFitStatus:$("mibroFitStatus"),mibroBridgeAccess:$("mibroBridgeAccess"),bridgeBanner:$("bridgeBanner"),appVersion:$("appVersion"),updateStatus:$("updateStatus"),checkUpdate:$("checkUpdateBtn"),fixMibro:$("fixMibroBtn"),openMibroFit:$("openMibroFitBtn"),testMibro:$("testMibroBtn"),mibroMsg:$("mibroMessage"),
+ mibro:$("mibroCard"),nativeStatus:$("nativeStatus"),notificationStatus:$("notificationStatus"),mibroFitStatus:$("mibroFitStatus"),mibroBridgeAccess:$("mibroBridgeAccess"),bridgeBanner:$("bridgeBanner"),appVersion:$("appVersion"),updateStatus:$("updateStatus"),checkUpdate:$("checkUpdateBtn"),fixMibro:$("fixMibroBtn"),openMibroFit:$("openMibroFitBtn"),testMibro:$("testMibroBtn"),testSuite:$("testSuiteBtn"),mibroMsg:$("mibroMessage"),
  workouts:$("workoutsCard"),select:$("workoutSelect"),preview:$("workoutPreview"),prepare:$("prepareBtn"),prepareMsg:$("prepareMessage"),
  plan:$("planCard"),planTitle:$("planTitle"),planBlocks:$("planBlocks"),start:$("startBtn"),
- live:$("liveCard"),phase:$("phase"),gpsBadge:$("gpsBadge"),guidance:$("guidance"),timerLabel:$("timerLabel"),timer:$("timer"),target:$("target"),pace:$("pace"),distance:$("distance"),accuracy:$("accuracy"),blockIndex:$("blockIndex"),
+ live:$("liveCard"),phase:$("phase"),gpsBadge:$("gpsBadge"),guidance:$("guidance"),timerLabel:$("timerLabel"),timer:$("timer"),target:$("target"),pace:$("pace"),distance:$("distance"),accuracy:$("accuracy"),blockIndex:$("blockIndex"),liveControls:$("liveControls"),finalSummary:$("finalSummary"),finalStatus:$("finalStatus"),finalTime:$("finalTime"),finalDistance:$("finalDistance"),finalPace:$("finalPace"),newWorkout:$("newWorkoutBtn"),
  pause:$("pauseBtn"),next:$("nextBtn"),stop:$("stopBtn")
 };
 const S={auth:null,db:null,user:null,athlete:null,workouts:[],selected:null,plan:null,running:false,paused:false,block:0,blockStarted:0,pauseStarted:0,watchId:null,lastPos:null,distanceM:0,blockStartDistanceM:0,samples:[],paceSec:NaN,accuracyM:NaN,guide:"unknown",guideSince:0,lastGuideAt:0,timer:null};
@@ -22,6 +22,7 @@ function descOf(w){return (w&&(w.description||w.descricao||w.observacoes))||""}
 function done(w){return ["realizado","concluido","concluído"].includes(norm(w&&w.status).toLowerCase())||!!(w&&w.stravaData)}
 function displayDate(iso){const p=String(iso||"").slice(0,10).split("-");return p.length===3?p[2]+"/"+p[1]+"/"+p[0]:(iso||"—")}
 function fmtTime(sec){sec=Math.max(0,Math.ceil(Number(sec)||0));return String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0")}
+function fmtLongTime(sec){sec=Math.max(0,Math.round(Number(sec)||0));const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;return h>0?String(h)+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0"):String(m).padStart(2,"0")+":"+String(s).padStart(2,"0")}
 function fmtPace(sec){sec=Math.round(Number(sec));return Number.isFinite(sec)&&sec>0?Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0")+"/km":"—"}
 function esc(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
 function native(){return !!(window.AtletIANative&&typeof window.AtletIANative.configure==="function")}
@@ -164,6 +165,15 @@ function prepareWorkout(){
  show(ui.plan,true);ui.start.disabled=false;message(ui.prepareMsg,"Treino pronto para executar.","good");
  if(native())ncall("configure",JSON.stringify({version:"atletia.workout.v1",athleteUid:S.user.uid,athleteName:(S.athlete&&(S.athlete.name||S.athlete.nome))||"Thamis",title:plan.title,blocks:plan.blocks}));
 }
+async function testFullSuite(){
+ message(ui.mibroMsg,"Iniciando teste completo. O GS Pro receberá 8 eventos em sequência…","warn");
+ if(!native()){message(ui.mibroMsg,"O teste completo exige o APK Android.","bad");return}
+ const s=renderNative();
+ if(!s.mibroFitInstalled||!s.notificationPermission||!s.bridgeAccess){message(ui.mibroMsg,"A ponte ainda não está pronta. Corrija a ponte antes do teste completo.","warn");ncall("fixMibroBridge");return}
+ ncall("testSuite");
+ let n=0;const labels=["INICIADO","ACELERE","MANTENHA","REDUZA","PAUSADO","RETOMADO","PRÓXIMO BLOCO","CONCLUÍDO"];
+ message(ui.mibroMsg,"Teste completo enviado: "+labels.join(" → ")+".","good");
+}
 async function testMibro(){
  message(ui.mibroMsg,"Verificando a ponte…");
  if(native()){
@@ -185,8 +195,9 @@ function activeBlock(){return S.plan&&S.plan.blocks[S.block]}
 function announceBlock(b){if(!b)return;const target=b.targetPaceMinSec&&b.targetPaceMaxSec?" Alvo "+fmtPace(b.targetPaceMinSec)+" a "+fmtPace(b.targetPaceMaxSec)+".":" Ritmo livre.";speak(b.label+"."+target);vibrate([220,90,220])}
 function setTarget(b){ui.phase.textContent=b?b.label:"—";ui.target.textContent=b&&b.targetPaceMinSec&&b.targetPaceMaxSec?"Alvo "+fmtPace(b.targetPaceMinSec)+" – "+fmtPace(b.targetPaceMaxSec):"Ritmo livre";ui.blockIndex.textContent=b?(S.block+1)+"/"+S.plan.blocks.length:"—"}
 function startLive(){
- if(!S.plan)return;S.running=true;S.paused=false;S.block=0;S.distanceM=0;S.blockStartDistanceM=0;S.blockStarted=Date.now();S.lastPos=null;S.samples=[];S.paceSec=NaN;S.guide="unknown";S.lastGuideAt=0;
- show(ui.live,true);ui.live.scrollIntoView({behavior:"smooth",block:"start"});setTarget(activeBlock());setGuide("INICIANDO","good");
+ if(!S.plan||S.running)return;S.running=true;S.paused=false;S.block=0;S.distanceM=0;S.blockStartDistanceM=0;S.blockStarted=Date.now();S.lastPos=null;S.samples=[];S.paceSec=NaN;S.guide="unknown";S.lastGuideAt=0;
+ show(ui.live,true);show(ui.finalSummary,false);show(ui.newWorkout,false);show(ui.liveControls,true);ui.pause.disabled=false;ui.next.disabled=false;ui.stop.disabled=false;ui.start.disabled=true;
+ ui.live.scrollIntoView({behavior:"smooth",block:"start"});setTarget(activeBlock());setGuide("INICIANDO","good");
  if(native()){setGuide("AGUARDANDO PACE…","");ncall("configure",JSON.stringify({version:"atletia.workout.v1",athleteUid:S.user.uid,athleteName:(S.athlete&&(S.athlete.name||S.athlete.nome))||"Thamis",title:S.plan.title,blocks:S.plan.blocks}));ncall("start");return}
  if(!navigator.geolocation){message(ui.prepareMsg,"Este aparelho não disponibiliza GPS.","bad");return}
  S.watchId=navigator.geolocation.watchPosition(onPosition,()=>{ui.gpsBadge.textContent="GPS sem sinal";ui.gpsBadge.className="badge warn"},{enableHighAccuracy:true,maximumAge:1000,timeout:12000});
@@ -236,15 +247,26 @@ function stopLive(user=true,completed=false){
 window.AtletIAMibroNativeTelemetry=payload=>{
  if(!payload||typeof payload!=="object")return;
  const mode=String(payload.state||"");
- if(mode==="RUNNING"||mode==="PAUSED"){S.running=true;S.paused=mode==="PAUSED";show(ui.live,true);ui.pause.textContent=S.paused?"CONTINUAR":"PAUSAR"}
- if(mode==="ENDED"){S.running=false;S.paused=false;setGuide(payload.completed?"TREINO CONCLUÍDO":"TREINO ENCERRADO",payload.completed?"good":"warn")}
+ if(mode==="RUNNING"||mode==="PAUSED"){
+  S.running=true;S.paused=mode==="PAUSED";show(ui.live,true);show(ui.liveControls,true);show(ui.finalSummary,false);show(ui.newWorkout,false);ui.start.disabled=true;ui.pause.disabled=false;ui.next.disabled=false;ui.stop.disabled=false;ui.pause.textContent=S.paused?"CONTINUAR":"PAUSAR";
+  if(payload.blockLabel)ui.phase.textContent=payload.blockLabel;
+ }
+ if(mode==="READY"||mode==="IDLE"){S.running=false;S.paused=false;ui.start.disabled=!S.plan}
+ if(mode==="ENDED"){
+  S.running=false;S.paused=false;ui.start.disabled=false;show(ui.live,true);show(ui.liveControls,false);show(ui.finalSummary,true);show(ui.newWorkout,true);
+  const endedText=payload.completed?"TREINO CONCLUÍDO":"TREINO ENCERRADO";setGuide(endedText,payload.completed?"good":"warn");ui.phase.textContent="Finalizado";ui.timerLabel.textContent="TEMPO ATIVO";ui.timer.textContent=fmtLongTime(payload.elapsedSec||0);ui.target.textContent="Sessão finalizada";
+  ui.finalStatus.textContent=payload.completed?"Concluído":"Encerrado";ui.finalTime.textContent=fmtLongTime(payload.elapsedSec||0);ui.finalDistance.textContent=Number.isFinite(payload.distanceM)?(payload.distanceM/1000).toFixed(2).replace(".",",")+" km":"—";ui.finalPace.textContent=Number.isFinite(payload.averagePaceSecPerKm)?fmtPace(payload.averagePaceSecPerKm):"—";
+ }
  if(Number.isFinite(payload.paceSecPerKm))ui.pace.textContent=fmtPace(payload.paceSecPerKm);
  if(Number.isFinite(payload.distanceM))ui.distance.textContent=(payload.distanceM/1000).toFixed(2).replace(".",",")+" km";
  if(Number.isFinite(payload.accuracyM)){ui.accuracy.textContent=Math.round(payload.accuracyM)+" m";ui.gpsBadge.textContent=payload.accuracyM<=GPS_MAX?"GPS OK":"GPS impreciso";ui.gpsBadge.className="badge "+(payload.accuracyM<=GPS_MAX?"good":"warn")}
- if(Number.isFinite(payload.blockIndex)&&S.plan&&S.plan.blocks.length){S.block=payload.blockIndex;setTarget(S.plan.blocks[S.block])}
- if(Number.isFinite(payload.remainingSec)){ui.timerLabel.textContent="TEMPO RESTANTE";ui.timer.textContent=fmtTime(payload.remainingSec)}else if(Number.isFinite(payload.remainingM)){ui.timerLabel.textContent="DISTÂNCIA RESTANTE";ui.timer.textContent=Math.round(payload.remainingM)+" m"}
- if(payload.guide){const g=String(payload.guide).toUpperCase();setGuide(g,g==="MANTENHA"?"good":(g==="REDUZA"?"fast":(g==="ACELERE"?"slow":"")))}
+ if(mode!=="ENDED"&&Number.isFinite(payload.blockIndex)&&S.plan&&S.plan.blocks.length){S.block=payload.blockIndex;setTarget(S.plan.blocks[S.block])}
+ if(mode!=="ENDED"&&Number.isFinite(payload.remainingSec)){ui.timerLabel.textContent="TEMPO RESTANTE";ui.timer.textContent=fmtTime(payload.remainingSec)}else if(mode!=="ENDED"&&Number.isFinite(payload.remainingM)){ui.timerLabel.textContent="DISTÂNCIA RESTANTE";ui.timer.textContent=Math.round(payload.remainingM)+" m"}
+ if(mode!=="ENDED"&&payload.guide){const g=String(payload.guide).toUpperCase();setGuide(g,g==="MANTENHA"?"good":(g==="REDUZA"?"fast":(g==="ACELERE"?"slow":"")))}
 };
+function newWorkout(){
+ S.running=false;S.paused=false;show(ui.live,false);show(ui.finalSummary,false);show(ui.newWorkout,false);show(ui.liveControls,true);ui.pause.textContent="PAUSAR";ui.start.disabled=!S.plan;ui.workouts.scrollIntoView({behavior:"smooth",block:"start"});
+}
 async function handleUser(user){
  show(ui.boot,false);S.user=user||null;
  if(!user){show(ui.login,true);show(ui.athlete,false);show(ui.mibro,false);show(ui.workouts,false);show(ui.plan,false);show(ui.live,false);return}
@@ -261,13 +283,14 @@ function bind(){
  ui.loginForm.addEventListener("submit",async e=>{e.preventDefault();message(ui.loginMsg,"Entrando…");try{await S.auth.signInWithEmailAndPassword(ui.email.value.trim(),ui.password.value)}catch(err){message(ui.loginMsg,err.message||"Falha no login.","bad")}});
  ui.logout.addEventListener("click",async()=>{if(S.running)stopLive(true);await S.auth.signOut()});
  ui.select.addEventListener("change",e=>selectWorkout(e.target.value));ui.prepare.addEventListener("click",prepareWorkout);ui.start.addEventListener("click",startLive);
- ui.pause.addEventListener("click",pauseLive);ui.next.addEventListener("click",nextBlock);ui.stop.addEventListener("click",()=>stopLive(true));ui.testMibro.addEventListener("click",testMibro);
+ ui.pause.addEventListener("click",pauseLive);ui.next.addEventListener("click",nextBlock);ui.stop.addEventListener("click",()=>stopLive(true));ui.testMibro.addEventListener("click",testMibro);ui.testSuite.addEventListener("click",testFullSuite);ui.newWorkout.addEventListener("click",newWorkout);
  ui.fixMibro.addEventListener("click",()=>ncall("fixMibroBridge"));ui.openMibroFit.addEventListener("click",()=>ncall("openMibroFit"));
 }
 function boot(){
  bind();renderNative();
  if(native()){try{window.AtletIAUpdateStatus(window.AtletIANative.updateStatus())}catch(e){}}
  try{firebaseReady();S.auth.onAuthStateChanged(handleUser)}catch(e){show(ui.boot,false);show(ui.login,true);message(ui.loginMsg,e.message,"bad")}
+ if(native())setTimeout(()=>ncall("queryState"),1200);
  S.timer=setInterval(browserTick,500);
 }
 boot();
