@@ -48,7 +48,9 @@ android {
         release {
             debuggable false
             minifyEnabled false
-            signingConfig signingConfigs.release
+            if (keystorePath) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }
