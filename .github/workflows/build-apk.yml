@@ -95,9 +95,9 @@ jobs:
         if: steps.signing.outputs.signed == 'true'
         run: gradle -p android-mibro assembleRelease --no-daemon --stacktrace
 
-      - name: Compilar diagnóstico sem assinatura definitiva
+      - name: Compilar release unsigned para diagnóstico
         if: steps.signing.outputs.signed != 'true'
-        run: gradle -p android-mibro assembleDebug --no-daemon --stacktrace
+        run: gradle -p android-mibro assembleRelease --no-daemon --stacktrace
 
       - name: Preparar APK definitivo
         if: steps.signing.outputs.signed == 'true'
@@ -110,7 +110,7 @@ jobs:
         if: steps.signing.outputs.signed != 'true'
         shell: bash
         run: |
-          cp android-mibro/app/build/outputs/apk/debug/app-debug.apk "DIAGNOSTICO-assinatura-nao-configurada.apk"
+          cp android-mibro/app/build/outputs/apk/release/app-release-unsigned.apk "DIAGNOSTICO-release-unsigned.apk"
 
       - name: Guardar APK definitivo
         if: steps.signing.outputs.signed == 'true'
@@ -126,7 +126,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: CONFIGURE-ANDROID-SIGNING-BUNDLE
-          path: DIAGNOSTICO-assinatura-nao-configurada.apk
+          path: DIAGNOSTICO-release-unsigned.apk
           retention-days: 3
 
       - name: Publicar Release atualizável
