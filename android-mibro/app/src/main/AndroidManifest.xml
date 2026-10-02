@@ -7,10 +7,31 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <application android:allowBackup="false" android:icon="@drawable/ic_launcher" android:label="atletIA Mibro • Thamis" android:usesCleartextTraffic="false" android:theme="@style/AppTheme">
-        <activity android:name=".MainActivity" android:screenOrientation="unspecified" android:exported="true">
-            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+
+    <queries>
+        <package android:name="com.xiaoxun.xunoversea.mibrofit" />
+    </queries>
+
+    <application
+        android:allowBackup="false"
+        android:icon="@drawable/ic_launcher"
+        android:label="atletIA Mibro"
+        android:usesCleartextTraffic="false"
+        android:theme="@style/AppTheme">
+
+        <activity
+            android:name=".MainActivity"
+            android:screenOrientation="unspecified"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
         </activity>
-        <service android:name=".MibroPacerService" android:exported="false" android:foregroundServiceType="location" />
+
+        <service
+            android:name=".MibroPacerService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
     </application>
 </manifest>
