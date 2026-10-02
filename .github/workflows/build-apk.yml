@@ -111,6 +111,10 @@ jobs:
         shell: bash
         run: |
           cp android-mibro/app/build/outputs/apk/release/app-release-unsigned.apk "DIAGNOSTICO-release-unsigned.apk"
+          mkdir -p apksigner-tool/lib
+          cp "$ANDROID_HOME/build-tools/35.0.0/apksigner" apksigner-tool/apksigner
+          cp "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" apksigner-tool/lib/apksigner.jar
+          chmod +x apksigner-tool/apksigner
 
       - name: Guardar APK definitivo
         if: steps.signing.outputs.signed == 'true'
@@ -126,7 +130,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: CONFIGURE-ANDROID-SIGNING-BUNDLE
-          path: DIAGNOSTICO-release-unsigned.apk
+          path: |
+            DIAGNOSTICO-release-unsigned.apk
+            apksigner-tool/
           retention-days: 3
 
       - name: Publicar Release atualizável
