@@ -4,42 +4,58 @@ Cliente leve e dedicado do **atletIA Live** para o **Mibro Watch GS Pro** da Tha
 
 ## O que este repositório faz
 
-- usa o **mesmo Firebase Authentication** e o mesmo Realtime Database do LeRunners/atletIA;
+- usa o mesmo Firebase Authentication e o mesmo Realtime Database do LeRunners/atletIA;
 - lê somente os treinos do usuário autenticado em `users/{uid}/workouts` e `data/{uid}/workouts`;
-- interpreta a mesma estrutura `livePlan / atletiaLive / structuredWorkout` já gravada pelo atletIA;
-- mantém compatibilidade com treinos contínuos e intervalados que tenham duração/distância e pace explícitos;
-- executa o pacer no Android com **Foreground Service**, inclusive com a tela apagada;
-- usa o GPS do celular com filtro de precisão e suavização de pace;
-- envia alertas `ACELERE`, `MANTENHA`, `REDUZA`, troca de bloco, pausa e conclusão como notificações Android;
-- essas notificações podem ser espelhadas no **Mibro GS Pro** pelo **Mibro Fit**, desde que as notificações deste app estejam habilitadas no Mibro Fit;
+- interpreta a mesma estrutura `livePlan / atletiaLive / structuredWorkout`;
+- executa o pacer no Android com Foreground Service, inclusive com a tela apagada;
+- usa GPS do celular com filtro de precisão e suavização de pace;
+- orienta `ACELERE`, `MANTENHA`, `REDUZA`, troca de bloco, pausa e conclusão;
+- envia alertas Android para o Mibro Fit espelhar no GS Pro;
 - fala as orientações em pt-BR no celular/fone Bluetooth;
-- inclui botão de **teste de alerta Mibro** antes da corrida.
+- possui diagnóstico da ponte com o Mibro Fit;
+- possui **atualização automática do próprio APK ao abrir** a partir da linha assinada v1.2.x.
 
-## O que NÃO está neste repositório
+## Atualização automática
 
-Este projeto não duplica painel administrativo, Strava, nutrição, GPX, GPT/Gemini ou outras telas do LeRunners. A criação/importação do treino continua no atletIA principal. Aqui existe apenas o cliente de execução do treino para a Thamis.
+O aplicativo consulta a Release oficial mais recente no GitHub quando é aberto.
 
-Nenhuma chave privada/segredo foi copiada. O `web/config.js` contém somente a configuração pública do Firebase necessária ao SDK web.
+Quando existe uma versão superior ele:
 
-## APK
+1. baixa o APK;
+2. valida SHA-256;
+3. valida o mesmo applicationId;
+4. valida o mesmo certificado de assinatura;
+5. instala a atualização pelo PackageInstaller do Android.
 
-O workflow `.github/workflows/build-apk.yml` compila automaticamente a cada alteração na `main` e também pode ser executado manualmente.
+Se o Android exigir uma ação do usuário, o aplicativo abre somente a tela oficial necessária. O app instalado nunca é apagado se a validação falhar.
 
-Artefato esperado:
+Detalhes técnicos: [AUTOUPDATE.md](AUTOUPDATE.md).
 
-`atletIA-Mibro-Thamis-v1.0.0.apk`
+## Assinatura definitiva
+
+A chave privada de assinatura **não fica no repositório público**.
+
+O GitHub Actions usa somente o secret:
+
+`ANDROID_SIGNING_BUNDLE`
+
+Sem esse secret, o workflow gera apenas um APK de diagnóstico e não publica uma Release atualizável.
 
 ## Primeiro uso
 
-1. Instalar o APK gerado pelo GitHub Actions.
-2. Abrir o app e entrar com o **mesmo login da Thamis no atletIA Live**.
-3. No Mibro Fit, habilitar notificações para **atletIA Mibro • Thamis**.
-4. No app, tocar em **TESTAR ALERTA NO MIBRO**.
-5. Confirmar vibração/aviso no GS Pro.
-6. Selecionar o treino, preparar e iniciar.
+1. Instalar a primeira APK definitiva v1.2.x.
+2. Entrar com o mesmo login da Thamis no atletIA Live.
+3. Autorizar notificações e localização.
+4. No Mibro Fit, habilitar notificações do `atletIA Mibro`.
+5. Usar `CORRIGIR PONTE MIBRO` se o diagnóstico indicar falta de acesso.
+6. Usar `TESTAR ALERTA NO MIBRO`.
+7. Selecionar o treino, preparar e iniciar.
 
 ## Segurança
 
-O aplicativo não tenta escrever comandos BLE desconhecidos no relógio nem alterar firmware. A ponte Mibro desta versão usa o mecanismo documentado de notificações Android → Mibro Fit → relógio.
+- nenhum segredo Gemini/OpenAI ou service-account está no repositório;
+- a atualização rejeita APK com hash, pacote ou certificado diferente;
+- o aplicativo não escreve comandos BLE proprietários desconhecidos no GS Pro;
+- a chave de assinatura definitiva é mantida fora do GitHub público.
 
 Powered by thIAguinho Soluções Digitais
