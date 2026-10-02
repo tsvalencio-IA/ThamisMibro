@@ -4,10 +4,10 @@ const $=id=>document.getElementById(id);
 const ui={
  boot:$("bootCard"),login:$("loginCard"),loginForm:$("loginForm"),email:$("email"),password:$("password"),loginMsg:$("loginMessage"),
  athlete:$("athleteCard"),athleteName:$("athleteName"),athleteEmail:$("athleteEmail"),logout:$("logoutBtn"),workoutCount:$("workoutCount"),nextDate:$("nextWorkoutDate"),
- mibro:$("mibroCard"),nativeStatus:$("nativeStatus"),notificationStatus:$("notificationStatus"),testMibro:$("testMibroBtn"),mibroMsg:$("mibroMessage"),
+ mibro:$("mibroCard"),nativeStatus:$("nativeStatus"),notificationStatus:$("notificationStatus"),mibroFitStatus:$("mibroFitStatus"),mibroBridgeAccess:$("mibroBridgeAccess"),bridgeBanner:$("bridgeBanner"),appVersion:$("appVersion"),fixMibro:$("fixMibroBtn"),openMibroFit:$("openMibroFitBtn"),testMibro:$("testMibroBtn"),mibroMsg:$("mibroMessage"),
  workouts:$("workoutsCard"),select:$("workoutSelect"),preview:$("workoutPreview"),prepare:$("prepareBtn"),prepareMsg:$("prepareMessage"),
  plan:$("planCard"),planTitle:$("planTitle"),planBlocks:$("planBlocks"),start:$("startBtn"),
- live:$("liveCard"),phase:$("phase"),gpsBadge:$("gpsBadge"),guidance:$("guidance"),timer:$("timer"),target:$("target"),pace:$("pace"),distance:$("distance"),accuracy:$("accuracy"),blockIndex:$("blockIndex"),
+ live:$("liveCard"),phase:$("phase"),gpsBadge:$("gpsBadge"),guidance:$("guidance"),timerLabel:$("timerLabel"),timer:$("timer"),target:$("target"),pace:$("pace"),distance:$("distance"),accuracy:$("accuracy"),blockIndex:$("blockIndex"),
  pause:$("pauseBtn"),next:$("nextBtn"),stop:$("stopBtn")
 };
 const S={auth:null,db:null,user:null,athlete:null,workouts:[],selected:null,plan:null,running:false,paused:false,block:0,blockStarted:0,pauseStarted:0,watchId:null,lastPos:null,distanceM:0,blockStartDistanceM:0,samples:[],paceSec:NaN,accuracyM:NaN,guide:"unknown",guideSince:0,lastGuideAt:0,timer:null};
@@ -53,13 +53,34 @@ function chooseDefault(){
   if(af!==bf)return af?-1:1;return af?da-db:db-da;
  })[0]||null;
 }
+function getBridgeStatus(){
+ if(!native())return {appVersion:"web",mibroFitInstalled:false,notificationPermission:("Notification" in window)&&Notification.permission==="granted",bridgeAccess:false,web:true};
+ try{return JSON.parse(window.AtletIANative.mibroBridgeStatus())}catch(e){return {appVersion:"?",mibroFitInstalled:false,notificationPermission:false,bridgeAccess:false,error:true}}
+}
 function renderNative(){
+ const s=getBridgeStatus();
  if(native()){
   ui.nativeStatus.textContent="APK nativo";
-  let p="—";try{p=window.AtletIANative.notificationPermission()}catch(e){}
-  ui.notificationStatus.textContent=p==="granted"?"Permitidas":"Verificar permissão";
- }else{ui.nativeStatus.textContent="Web";ui.notificationStatus.textContent=("Notification" in window)?Notification.permission:"Indisponível"}
+  ui.notificationStatus.textContent=s.notificationPermission?"Permitidas":"BLOQUEADAS";
+  ui.mibroFitStatus.textContent=s.mibroFitInstalled?"Instalado":"NÃO INSTALADO";
+  ui.mibroBridgeAccess.textContent=s.bridgeAccess?"Ativo":"FALTA ACESSO";
+  ui.appVersion.textContent="v"+(s.appVersion||"?");
+  if(!s.mibroFitInstalled){ui.bridgeBanner.textContent="Mibro Fit não foi localizado neste celular.";ui.bridgeBanner.className="bridge-banner bad"}
+  else if(!s.notificationPermission){ui.bridgeBanner.textContent="As notificações do atletIA Mibro estão bloqueadas no Android.";ui.bridgeBanner.className="bridge-banner bad"}
+  else if(!s.bridgeAccess){ui.bridgeBanner.textContent="Mibro Fit ainda não possui acesso para ler e encaminhar as notificações. Toque em CORRIGIR PONTE MIBRO.";ui.bridgeBanner.className="bridge-banner warn"}
+  else{ui.bridgeBanner.textContent="Ponte Android pronta. Falta apenas habilitar atletIA Mibro dentro de Notificações do Mibro Fit e confirmar o teste no relógio.";ui.bridgeBanner.className="bridge-banner good"}
+ }else{
+  ui.nativeStatus.textContent="Web";
+  ui.notificationStatus.textContent=("Notification" in window)?Notification.permission:"Indisponível";
+  ui.mibroFitStatus.textContent="Somente APK";
+  ui.mibroBridgeAccess.textContent="Somente APK";
+  ui.appVersion.textContent="WEB";
+  ui.bridgeBanner.textContent="Abra pelo APK dedicado para usar a ponte com o GS Pro.";
+  ui.bridgeBanner.className="bridge-banner warn";
+ }
+ return s;
 }
+window.refreshMibroBridgeStatus=()=>renderNative();
 function renderWorkouts(){
  ui.select.innerHTML="";
  const sorted=[...S.workouts].sort((a,b)=>{
@@ -141,8 +162,18 @@ function prepareWorkout(){
  if(native())ncall("configure",JSON.stringify({version:"atletia.workout.v1",athleteUid:S.user.uid,athleteName:(S.athlete&&(S.athlete.name||S.athlete.nome))||"Thamis",title:plan.title,blocks:plan.blocks}));
 }
 async function testMibro(){
- message(ui.mibroMsg,"Enviando teste…");
- if(native()){ncall("testAlert");message(ui.mibroMsg,"Notificação emitida pelo Android. Só considere a ponte confirmada se o GS Pro vibrar ou mostrar a mensagem.","warn");return}
+ message(ui.mibroMsg,"Verificando a ponte…");
+ if(native()){
+  const s=renderNative();
+  if(!s.mibroFitInstalled||!s.notificationPermission||!s.bridgeAccess){
+   message(ui.mibroMsg,"A ponte ainda não está liberada. Abrindo a configuração necessária.","warn");
+   ncall("fixMibroBridge");
+   return;
+  }
+  ncall("testAlert");
+  message(ui.mibroMsg,"Enviei 2 alertas reais. A ponte só está confirmada quando o GS Pro vibrar/mostrar a mensagem.","warn");
+  return
+ }
  if(!("Notification" in window)){message(ui.mibroMsg,"Teste completo no relógio exige o APK Android.","warn");return}
  const p=Notification.permission==="default"?await Notification.requestPermission():Notification.permission;
  if(p==="granted"){new Notification("atletIA Mibro • TESTE",{body:"Se este aviso apareceu no GS Pro, a ponte de notificações está funcionando."});message(ui.mibroMsg,"Notificação enviada. No APK o teste também usa o serviço nativo.","good")}else message(ui.mibroMsg,"Permissão de notificação não concedida.","bad");
@@ -172,7 +203,7 @@ function browserTick(){
  if(!S.running||S.paused||native())return;const b=activeBlock();if(!b)return;const now=Date.now(),elapsed=(now-S.blockStarted)/1000;let rem=null;
  if(b.durationSec){rem=Math.max(0,b.durationSec-elapsed);if(rem<=0){enterBrowserBlock(S.block+1);return}}
  else if(b.distanceM){rem=Math.max(0,b.distanceM-(S.distanceM-S.blockStartDistanceM));if(rem<=0){enterBrowserBlock(S.block+1);return}}
- ui.timer.textContent=b.durationSec?fmtTime(rem):Math.round(rem)+" m";evaluatePace(b,now);
+ ui.timerLabel.textContent=b.durationSec?"TEMPO RESTANTE":"DISTÂNCIA RESTANTE";ui.timer.textContent=b.durationSec?fmtTime(rem):Math.round(rem)+" m";evaluatePace(b,now);
 }
 function enterBrowserBlock(i){if(i>=S.plan.blocks.length){stopLive(false,true);return}S.block=i;S.blockStarted=Date.now();S.blockStartDistanceM=S.distanceM;S.guide="unknown";S.guideSince=Date.now();S.lastGuideAt=0;const b=activeBlock();setTarget(b);announceBlock(b)}
 function evaluatePace(b,now){
@@ -208,7 +239,7 @@ window.AtletIAMibroNativeTelemetry=payload=>{
  if(Number.isFinite(payload.distanceM))ui.distance.textContent=(payload.distanceM/1000).toFixed(2).replace(".",",")+" km";
  if(Number.isFinite(payload.accuracyM)){ui.accuracy.textContent=Math.round(payload.accuracyM)+" m";ui.gpsBadge.textContent=payload.accuracyM<=GPS_MAX?"GPS OK":"GPS impreciso";ui.gpsBadge.className="badge "+(payload.accuracyM<=GPS_MAX?"good":"warn")}
  if(Number.isFinite(payload.blockIndex)&&S.plan&&S.plan.blocks.length){S.block=payload.blockIndex;setTarget(S.plan.blocks[S.block])}
- if(Number.isFinite(payload.remainingSec))ui.timer.textContent=fmtTime(payload.remainingSec);else if(Number.isFinite(payload.remainingM))ui.timer.textContent=Math.round(payload.remainingM)+" m";
+ if(Number.isFinite(payload.remainingSec)){ui.timerLabel.textContent="TEMPO RESTANTE";ui.timer.textContent=fmtTime(payload.remainingSec)}else if(Number.isFinite(payload.remainingM)){ui.timerLabel.textContent="DISTÂNCIA RESTANTE";ui.timer.textContent=Math.round(payload.remainingM)+" m"}
  if(payload.guide){const g=String(payload.guide).toUpperCase();setGuide(g,g==="MANTENHA"?"good":(g==="REDUZA"?"fast":(g==="ACELERE"?"slow":"")))}
 };
 async function handleUser(user){
@@ -228,6 +259,7 @@ function bind(){
  ui.logout.addEventListener("click",async()=>{if(S.running)stopLive(true);await S.auth.signOut()});
  ui.select.addEventListener("change",e=>selectWorkout(e.target.value));ui.prepare.addEventListener("click",prepareWorkout);ui.start.addEventListener("click",startLive);
  ui.pause.addEventListener("click",pauseLive);ui.next.addEventListener("click",nextBlock);ui.stop.addEventListener("click",()=>stopLive(true));ui.testMibro.addEventListener("click",testMibro);
+ ui.fixMibro.addEventListener("click",()=>ncall("fixMibroBridge"));ui.openMibroFit.addEventListener("click",()=>ncall("openMibroFit"));
 }
 function boot(){
  bind();renderNative();
