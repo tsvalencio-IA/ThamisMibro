@@ -2,6 +2,14 @@ plugins {
     id 'com.android.application'
 }
 
+def runNumber = (System.getenv("GITHUB_RUN_NUMBER") ?: "0") as int
+def versionCodeEnv = System.getenv("ATLETIA_VERSION_CODE")
+def versionNameEnv = System.getenv("ATLETIA_VERSION_NAME")
+def keystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+def keystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+def keyAliasEnv = System.getenv("ANDROID_KEY_ALIAS")
+def keyPasswordEnv = System.getenv("ANDROID_KEY_PASSWORD")
+
 android {
     namespace 'br.com.thiaguinhosolucoes.thamismibro'
     compileSdk 35
@@ -10,8 +18,8 @@ android {
         applicationId "br.com.thiaguinhosolucoes.thamismibro"
         minSdk 26
         targetSdk 35
-        versionCode 110
-        versionName "1.1.0"
+        versionCode versionCodeEnv ? versionCodeEnv.toInteger() : (200000 + runNumber)
+        versionName versionNameEnv ?: ("1.2." + runNumber)
     }
 
     sourceSets {
@@ -20,9 +28,28 @@ android {
         }
     }
 
+    signingConfigs {
+        release {
+            if (keystorePath) {
+                storeFile file(keystorePath)
+                storePassword keystorePassword
+                keyAlias keyAliasEnv
+                keyPassword keyPasswordEnv
+                v1SigningEnabled true
+                v2SigningEnabled true
+            }
+        }
+    }
+
     buildTypes {
-        debug { debuggable true }
-        release { minifyEnabled false }
+        debug {
+            debuggable true
+        }
+        release {
+            debuggable false
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
     }
 }
 
