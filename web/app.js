@@ -142,7 +142,7 @@ function prepareWorkout(){
 }
 async function testMibro(){
  message(ui.mibroMsg,"Enviando teste…");
- if(native()){ncall("testAlert");message(ui.mibroMsg,"Teste enviado. Confira se o GS Pro vibrou/mostrou o aviso.","good");return}
+ if(native()){ncall("testAlert");message(ui.mibroMsg,"Notificação emitida pelo Android. Só considere a ponte confirmada se o GS Pro vibrar ou mostrar a mensagem.","warn");return}
  if(!("Notification" in window)){message(ui.mibroMsg,"Teste completo no relógio exige o APK Android.","warn");return}
  const p=Notification.permission==="default"?await Notification.requestPermission():Notification.permission;
  if(p==="granted"){new Notification("atletIA Mibro • TESTE",{body:"Se este aviso apareceu no GS Pro, a ponte de notificações está funcionando."});message(ui.mibroMsg,"Notificação enviada. No APK o teste também usa o serviço nativo.","good")}else message(ui.mibroMsg,"Permissão de notificação não concedida.","bad");
@@ -153,7 +153,7 @@ function setTarget(b){ui.phase.textContent=b?b.label:"—";ui.target.textContent
 function startLive(){
  if(!S.plan)return;S.running=true;S.paused=false;S.block=0;S.distanceM=0;S.blockStartDistanceM=0;S.blockStarted=Date.now();S.lastPos=null;S.samples=[];S.paceSec=NaN;S.guide="unknown";S.lastGuideAt=0;
  show(ui.live,true);ui.live.scrollIntoView({behavior:"smooth",block:"start"});setTarget(activeBlock());setGuide("INICIANDO","good");
- if(native()){ncall("configure",JSON.stringify({version:"atletia.workout.v1",athleteUid:S.user.uid,athleteName:(S.athlete&&(S.athlete.name||S.athlete.nome))||"Thamis",title:S.plan.title,blocks:S.plan.blocks}));ncall("start");return}
+ if(native()){setGuide("AGUARDANDO PACE…","");ncall("configure",JSON.stringify({version:"atletia.workout.v1",athleteUid:S.user.uid,athleteName:(S.athlete&&(S.athlete.name||S.athlete.nome))||"Thamis",title:S.plan.title,blocks:S.plan.blocks}));ncall("start");return}
  if(!navigator.geolocation){message(ui.prepareMsg,"Este aparelho não disponibiliza GPS.","bad");return}
  S.watchId=navigator.geolocation.watchPosition(onPosition,()=>{ui.gpsBadge.textContent="GPS sem sinal";ui.gpsBadge.className="badge warn"},{enableHighAccuracy:true,maximumAge:1000,timeout:12000});
  announceBlock(activeBlock());
