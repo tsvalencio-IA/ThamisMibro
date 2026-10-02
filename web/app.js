@@ -4,7 +4,7 @@ const $=id=>document.getElementById(id);
 const ui={
  boot:$("bootCard"),login:$("loginCard"),loginForm:$("loginForm"),email:$("email"),password:$("password"),loginMsg:$("loginMessage"),
  athlete:$("athleteCard"),athleteName:$("athleteName"),athleteEmail:$("athleteEmail"),logout:$("logoutBtn"),workoutCount:$("workoutCount"),nextDate:$("nextWorkoutDate"),
- mibro:$("mibroCard"),nativeStatus:$("nativeStatus"),notificationStatus:$("notificationStatus"),mibroFitStatus:$("mibroFitStatus"),mibroBridgeAccess:$("mibroBridgeAccess"),bridgeBanner:$("bridgeBanner"),appVersion:$("appVersion"),fixMibro:$("fixMibroBtn"),openMibroFit:$("openMibroFitBtn"),testMibro:$("testMibroBtn"),mibroMsg:$("mibroMessage"),
+ mibro:$("mibroCard"),nativeStatus:$("nativeStatus"),notificationStatus:$("notificationStatus"),mibroFitStatus:$("mibroFitStatus"),mibroBridgeAccess:$("mibroBridgeAccess"),bridgeBanner:$("bridgeBanner"),appVersion:$("appVersion"),updateStatus:$("updateStatus"),checkUpdate:$("checkUpdateBtn"),fixMibro:$("fixMibroBtn"),openMibroFit:$("openMibroFitBtn"),testMibro:$("testMibroBtn"),mibroMsg:$("mibroMessage"),
  workouts:$("workoutsCard"),select:$("workoutSelect"),preview:$("workoutPreview"),prepare:$("prepareBtn"),prepareMsg:$("prepareMessage"),
  plan:$("planCard"),planTitle:$("planTitle"),planBlocks:$("planBlocks"),start:$("startBtn"),
  live:$("liveCard"),phase:$("phase"),gpsBadge:$("gpsBadge"),guidance:$("guidance"),timerLabel:$("timerLabel"),timer:$("timer"),target:$("target"),pace:$("pace"),distance:$("distance"),accuracy:$("accuracy"),blockIndex:$("blockIndex"),
@@ -81,6 +81,9 @@ function renderNative(){
  return s;
 }
 window.refreshMibroBridgeStatus=()=>renderNative();
+window.AtletIAUpdateStatus=status=>{
+ if(ui.updateStatus)ui.updateStatus.textContent=status||"Verificando…";
+};
 function renderWorkouts(){
  ui.select.innerHTML="";
  const sorted=[...S.workouts].sort((a,b)=>{
@@ -263,6 +266,7 @@ function bind(){
 }
 function boot(){
  bind();renderNative();
+ if(native()){try{window.AtletIAUpdateStatus(window.AtletIANative.updateStatus())}catch(e){}}
  try{firebaseReady();S.auth.onAuthStateChanged(handleUser)}catch(e){show(ui.boot,false);show(ui.login,true);message(ui.loginMsg,e.message,"bad")}
  S.timer=setInterval(browserTick,500);
 }
