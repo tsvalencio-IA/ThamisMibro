@@ -9,6 +9,10 @@ on:
       - '.github/workflows/build-apk.yml'
   workflow_dispatch:
 
+concurrency:
+  group: thamismibro-apk-main
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
@@ -28,7 +32,6 @@ jobs:
       - name: Preparar Android SDK 35
         shell: bash
         run: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
           SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
           test -x "$SDKMANAGER"
           yes | "$SDKMANAGER" --licenses >/dev/null || true
@@ -39,39 +42,109 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
+      - name: Definir versão
+        id: version
+        shell: bash
+        run: |
+          VERSION_CODE=$((200000 + GITHUB_RUN_NUMBER))
+          VERSION_NAME="1.2.${GITHUB_RUN_NUMBER}"
+          APK_NAME="atletIA-Mibro-Thamis-v${VERSION_NAME}.apk"
+          echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
+          echo "ATLETIA_VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
+          echo "ATLETIA_VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
+          echo "version_code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+          echo "version_name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+          echo "apk_name=$APK_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Preparar assinatura definitiva
+        id: signing
+        shell: bash
+        env:
+          SIGNING_BUNDLE: ${{ secrets.ANDROID_SIGNING_BUNDLE }}
+        run: |
+          if [ -z "$SIGNING_BUNDLE" ]; then
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::ANDROID_SIGNING_BUNDLE ainda não configurado. Será feito apenas build de diagnóstico; nenhuma Release atualizável será publicada."
+            exit 0
+          fi
+
+          python3 - <<'PY'
+          import os, json, base64
+          bundle = json.loads(base64.b64decode(os.environ["SIGNING_BUNDLE"]).decode("utf-8"))
+          ks = os.path.join(os.environ["RUNNER_TEMP"], "ThamisMibro-release.jks")
+          with open(ks, "wb") as f:
+              f.write(base64.b64decode(bundle["keystoreBase64"]))
+          values = {
+              "ANDROID_KEYSTORE_PATH": ks,
+              "ANDROID_KEYSTORE_PASSWORD": bundle["storePassword"],
+              "ANDROID_KEY_ALIAS": bundle["alias"],
+              "ANDROID_KEY_PASSWORD": bundle["keyPassword"],
+          }
+          for v in values.values():
+              print(f"::add-mask::{v}")
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env:
+              for k, v in values.items():
+                  env.write(f"{k}={v}\n")
+          PY
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+
       - name: Validar JavaScript
         run: node --check web/app.js && node --check web/config.js && node --check web/sw.js
 
-      - name: Compilar APK
+      - name: Compilar APK definitivo assinado
+        if: steps.signing.outputs.signed == 'true'
+        run: gradle -p android-mibro assembleRelease --no-daemon --stacktrace
+
+      - name: Compilar diagnóstico sem assinatura definitiva
+        if: steps.signing.outputs.signed != 'true'
         run: gradle -p android-mibro assembleDebug --no-daemon --stacktrace
 
-      - name: Preparar artefatos
+      - name: Preparar APK definitivo
+        if: steps.signing.outputs.signed == 'true'
+        shell: bash
         run: |
-          cp android-mibro/app/build/outputs/apk/debug/app-debug.apk atletIA-Mibro-Thamis-v1.1.0.apk
-          sha256sum atletIA-Mibro-Thamis-v1.1.0.apk > atletIA-Mibro-Thamis-v1.1.0.sha256
+          cp android-mibro/app/build/outputs/apk/release/app-release.apk "${{ steps.version.outputs.apk_name }}"
+          sha256sum "${{ steps.version.outputs.apk_name }}" > "atletIA-Mibro-Thamis-v${{ steps.version.outputs.version_name }}.sha256"
 
-      - name: Guardar artefato da execução
+      - name: Preparar APK de diagnóstico
+        if: steps.signing.outputs.signed != 'true'
+        shell: bash
+        run: |
+          cp android-mibro/app/build/outputs/apk/debug/app-debug.apk "DIAGNOSTICO-assinatura-nao-configurada.apk"
+
+      - name: Guardar APK definitivo
+        if: steps.signing.outputs.signed == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: atletIA-Mibro-Thamis-v1.1.0
+          name: atletIA-Mibro-Thamis-v${{ steps.version.outputs.version_name }}
           path: |
-            atletIA-Mibro-Thamis-v1.1.0.apk
-            atletIA-Mibro-Thamis-v1.1.0.sha256
+            ${{ steps.version.outputs.apk_name }}
+            atletIA-Mibro-Thamis-v${{ steps.version.outputs.version_name }}.sha256
 
-      - name: Publicar Release de teste
+      - name: Guardar diagnóstico
+        if: steps.signing.outputs.signed != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: CONFIGURE-ANDROID-SIGNING-BUNDLE
+          path: DIAGNOSTICO-assinatura-nao-configurada.apk
+          retention-days: 3
+
+      - name: Publicar Release atualizável
+        if: steps.signing.outputs.signed == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: thamis-mibro-v1.1.0-build-${{ github.run_number }}
-          name: atletIA Mibro • Thamis v1.1.0 • build ${{ github.run_number }}
-          prerelease: true
+          tag_name: thamis-mibro-build-${{ github.run_number }}
+          name: atletIA Mibro • Thamis v${{ steps.version.outputs.version_name }}
+          prerelease: false
+          make_latest: true
           files: |
-            atletIA-Mibro-Thamis-v1.1.0.apk
-            atletIA-Mibro-Thamis-v1.1.0.sha256
+            ${{ steps.version.outputs.apk_name }}
+            atletIA-Mibro-Thamis-v${{ steps.version.outputs.version_name }}.sha256
           body: |
-            Build automático do aplicativo dedicado da Thamis.
+            VERSION_CODE=${{ steps.version.outputs.version_code }}
+            VERSION_NAME=${{ steps.version.outputs.version_name }}
 
-            Instalação:
-            1. Instale o APK.
-            2. Entre com o mesmo login do atletIA Live.
-            3. Habilite as notificações de "atletIA Mibro • Thamis" no Mibro Fit.
-            4. Use "TESTAR ALERTA NO MIBRO" antes do primeiro treino.
+            APK definitivo assinado do atletIA Mibro da Thamis.
+
+            A partir desta linha de assinatura, o próprio aplicativo verifica esta Release ao abrir,
+            valida SHA-256 + applicationId + certificado e instala versões mais novas.
