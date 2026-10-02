@@ -19,9 +19,15 @@
         <p>Pacer dedicado • mesmo login e treinos do atletIA Live</p>
       </div>
     </header>
-    <section id="bootCard" class="card center"><div class="spinner"></div><p>Conectando ao atletIA…</p></section>
+
+    <section id="bootCard" class="card center">
+      <div class="spinner"></div>
+      <p>Conectando ao atletIA…</p>
+    </section>
+
     <section id="loginCard" class="card hidden">
-      <div class="eyebrow">ACESSO EXISTENTE</div><h2>Entrar</h2>
+      <div class="eyebrow">ACESSO EXISTENTE</div>
+      <h2>Entrar</h2>
       <p class="muted">Use o mesmo e-mail e senha já usados no atletIA Live.</p>
       <form id="loginForm" class="form">
         <label>E-mail<input id="email" type="email" autocomplete="email" required></label>
@@ -30,38 +36,106 @@
       </form>
       <div id="loginMessage" class="message"></div>
     </section>
+
     <section id="athleteCard" class="card hidden">
-      <div class="row between gap"><div><div class="eyebrow">ATLETA CONECTADA</div><h2 id="athleteName">—</h2><div id="athleteEmail" class="muted">—</div></div><button id="logoutBtn" class="ghost">Sair</button></div>
-      <div class="stats"><div><span>Treinos</span><strong id="workoutCount">—</strong></div><div><span>Próximo</span><strong id="nextWorkoutDate">—</strong></div></div>
+      <div class="row between gap">
+        <div>
+          <div class="eyebrow">ATLETA CONECTADA</div>
+          <h2 id="athleteName">—</h2>
+          <div id="athleteEmail" class="muted">—</div>
+        </div>
+        <button id="logoutBtn" class="ghost">Sair</button>
+      </div>
+      <div class="stats">
+        <div><span>Treinos</span><strong id="workoutCount">—</strong></div>
+        <div><span>Próximo</span><strong id="nextWorkoutDate">—</strong></div>
+      </div>
     </section>
+
     <section id="mibroCard" class="card hidden">
-      <div class="eyebrow">PONTE COM O RELÓGIO</div><h2>Mibro GS Pro</h2>
-      <div class="status-grid"><div><span>Modo</span><strong id="nativeStatus">Web</strong></div><div><span>Notificações</span><strong id="notificationStatus">—</strong></div></div>
-      <p class="muted">O GS Pro recebe os avisos pelo Mibro Fit. No Mibro Fit, deixe as notificações deste app habilitadas e o Mibro Fit autorizado a rodar em segundo plano.</p>
-      <button id="testMibroBtn" class="accent">TESTAR ALERTA NO MIBRO</button><div id="mibroMessage" class="message"></div>
+      <div class="eyebrow">PONTE COM O RELÓGIO</div>
+      <div class="row between gap">
+        <h2>Mibro GS Pro</h2>
+        <span id="appVersion" class="badge">v—</span>
+      </div>
+
+      <div class="status-grid bridge-grid">
+        <div><span>Modo</span><strong id="nativeStatus">Web</strong></div>
+        <div><span>Notificações atletIA</span><strong id="notificationStatus">—</strong></div>
+        <div><span>Mibro Fit</span><strong id="mibroFitStatus">—</strong></div>
+        <div><span>Acesso Mibro Fit</span><strong id="mibroBridgeAccess">—</strong></div>
+      </div>
+
+      <div id="bridgeBanner" class="bridge-banner">Verificando a ponte com o Mibro Fit…</div>
+
+      <div class="bridge-actions">
+        <button id="fixMibroBtn" class="primary">CORRIGIR PONTE MIBRO</button>
+        <button id="openMibroFitBtn" class="ghost">ABRIR MIBRO FIT</button>
+      </div>
+
+      <button id="testMibroBtn" class="accent">TESTAR ALERTA NO MIBRO</button>
+      <div id="mibroMessage" class="message"></div>
     </section>
+
     <section id="workoutsCard" class="card hidden">
-      <div class="eyebrow">TREINOS DO ATLETIA</div><h2>Escolha o treino</h2>
-      <select id="workoutSelect"></select><pre id="workoutPreview" class="preview"></pre>
-      <button id="prepareBtn" class="primary">PREPARAR TREINO</button><div id="prepareMessage" class="message"></div>
+      <div class="eyebrow">TREINOS DO ATLETIA</div>
+      <h2>Escolha o treino</h2>
+      <select id="workoutSelect"></select>
+      <pre id="workoutPreview" class="preview"></pre>
+      <button id="prepareBtn" class="primary">PREPARAR TREINO</button>
+      <div id="prepareMessage" class="message"></div>
     </section>
+
     <section id="planCard" class="card hidden">
-      <div class="eyebrow">PLANO QUE SERÁ EXECUTADO</div><h2 id="planTitle">—</h2><div id="planBlocks" class="blocks"></div>
+      <div class="eyebrow">PLANO QUE SERÁ EXECUTADO</div>
+      <h2 id="planTitle">—</h2>
+      <div id="planBlocks" class="blocks"></div>
       <div class="safety">O app só inicia quando duração/distância e pace estão explícitos. Ele não inventa uma meta ausente.</div>
       <button id="startBtn" class="go" disabled>▶ INICIAR ATLETIA LIVE</button>
     </section>
+
     <section id="liveCard" class="card live hidden">
-      <div class="row between gap"><div><div class="eyebrow">CORRIDA EM ANDAMENTO</div><h2 id="phase">—</h2></div><span id="gpsBadge" class="badge">GPS aguardando</span></div>
-      <div id="guidance" class="guidance">Aguardando…</div><div id="timer" class="timer">00:00</div><div id="target" class="target">Alvo: —</div>
-      <div class="metrics"><div><span>Pace</span><strong id="pace">—</strong></div><div><span>Distância</span><strong id="distance">0,00 km</strong></div><div><span>GPS</span><strong id="accuracy">—</strong></div><div><span>Bloco</span><strong id="blockIndex">—</strong></div></div>
-      <div class="controls"><button id="pauseBtn">PAUSAR</button><button id="nextBtn">PRÓXIMO</button><button id="stopBtn" class="danger">ENCERRAR</button></div>
+      <div class="row between gap">
+        <div>
+          <div class="eyebrow">CORRIDA EM ANDAMENTO</div>
+          <h2 id="phase">—</h2>
+        </div>
+        <span id="gpsBadge" class="badge">GPS aguardando</span>
+      </div>
+
+      <div id="guidance" class="guidance">AGUARDANDO PACE…</div>
+      <div>
+        <div id="timerLabel" class="timer-label">RESTANTE</div>
+        <div id="timer" class="timer">00:00</div>
+      </div>
+      <div id="target" class="target">Alvo: —</div>
+
+      <div class="metrics">
+        <div><span>Pace</span><strong id="pace">—</strong></div>
+        <div><span>Distância</span><strong id="distance">0,00 km</strong></div>
+        <div><span>GPS</span><strong id="accuracy">—</strong></div>
+        <div><span>Bloco</span><strong id="blockIndex">—</strong></div>
+      </div>
+
+      <div class="controls">
+        <button id="pauseBtn">PAUSAR</button>
+        <button id="nextBtn">PRÓXIMO</button>
+        <button id="stopBtn" class="danger">ENCERRAR</button>
+      </div>
     </section>
-    <section class="card note"><strong>Como esta versão conversa com o GS Pro</strong><p>O pacer roda no Android. O celular calcula o pace com GPS, fala no fone/celular e cria notificações de orientação. O Mibro Fit espelha essas notificações no GS Pro quando permitido. Esta versão não escreve no firmware e não usa comandos BLE proprietários desconhecidos.</p></section>
+
+    <section class="card note">
+      <strong>Ponte GS Pro</strong>
+      <p>O pacer roda no Android e envia alertas de mensagem para o Mibro Fit. O app agora verifica se o Mibro Fit está instalado e se possui acesso de leitura de notificações/acessibilidade antes do teste. O relógio só é considerado conectado quando o alerta realmente aparece no GS Pro.</p>
+    </section>
+
     <footer>Powered by thIAguinho Soluções Digitais</footer>
   </main>
+
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script src="./config.js"></script><script src="./app.js"></script>
+  <script src="./config.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>
